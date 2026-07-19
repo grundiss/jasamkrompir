@@ -1,0 +1,165 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { act, useState } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { TextDetail } from '@jasamkrompir/shared';
+import { Reader } from './Reader';
+import type { ReadingMode } from '../lib/reading-mode';
+import { detailById, TEXT_A, TEXT_B } from '../test/fixtures';
+
+vi.mock('../lib/api', () => ({
+  api: { getText: vi.fn(), getTexts: vi.fn() },
+}));
+
+import { api } from '../lib/api';
+const getText = vi.mocked(api.getText);
+
+// Drives <Reader/> like <App/> does: the mode is held in state (so the
+// switcher can change it), while the text id is a prop the test can rerender.
+function Harness({ id, initialMode = 'both' }: { id: number; initialMode?: ReadingMode }) {
+  const [mode, setMode] = useState<ReadingMode>(initialMode);
+  return <Reader id={id} mode={mode} onModeChange={setMode} />;
+}
+
+beforeEach(() => {
+  getText.mockReset();
+  getText.mockImplementation((id: number) => Promise.resolve(detailById(id)));
+});
+
+describe('Reader — both mode', () => {
+  it('shows the Serbian and Russian paragraphs together, as plain text', async () => {
+    render(<Harness id={1} initialMode="both" />);
+
+    expect(await screen.findByText('Srpski A1')).toBeInTheDocument();
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    expect(screen.getByText('Srpski A2')).toBeInTheDocument();
+    expect(screen.getByText('Перевод A2')).toBeInTheDocument();
+    // Paragraphs aren't interactive in this mode.
+    expect(screen.queryByRole('button', { name: 'Srpski A1' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Reader — serbianOnly mode', () => {
+  it('shows only Serbian, with no translations and no interactive paragraphs', async () => {
+    render(<Harness id={1} initialMode="serbianOnly" />);
+
+    expect(await screen.findByText('Srpski A1')).toBeInTheDocument();
+    expect(screen.getByText('Srpski A2')).toBeInTheDocument();
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Srpski A1' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Reader — reveal mode', () => {
+  it('starts hidden and floats each paragraph translation independently on tap', async () => {
+    const user = userEvent.setup();
+    render(<Harness id={1} initialMode="reveal" />);
+
+    // Each Serbian paragraph is the tap target.
+    const p1 = await screen.findByRole('button', { name: 'Srpski A1' });
+    const p2 = screen.getByRole('button', { name: 'Srpski A2' });
+    expect(p1).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
+
+    // Reveal the first paragraph only.
+    await user.click(p1);
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    expect(p1).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
+
+    // Reveal the second too — both can stay pinned open at once.
+    await user.click(p2);
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    expect(screen.getByText('Перевод A2')).toBeInTheDocument();
+
+    // Tapping the first again hides only its translation.
+    await user.click(p1);
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    expect(screen.getByText('Перевод A2')).toBeInTheDocument();
+  });
+
+  it('toggles a translation from the keyboard', async () => {
+    const user = userEvent.setup();
+    render(<Harness id={1} initialMode="reveal" />);
+
+    const p1 = await screen.findByRole('button', { name: 'Srpski A1' });
+    p1.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+
+    // Esc closes the focused paragraph's translation.
+    await user.keyboard('{Escape}');
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+  });
+
+  it('resets revealed translations when the text changes', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<Harness id={1} initialMode="reveal" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Srpski A1' }));
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+
+    // Switch to another text — the new one loads collapsed.
+    rerender(<Harness id={2} initialMode="reveal" />);
+    const pB = await screen.findByRole('button', { name: 'Srpski B1' });
+    expect(pB).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Перевод B1')).not.toBeInTheDocument();
+  });
+});
+
+describe('Reader — switching modes', () => {
+  it('resets reveals: both shows all, reveal starts hidden again', async () => {
+    const user = userEvent.setup();
+    render(<Harness id={1} initialMode="reveal" />);
+
+    await user.click(await screen.findByRole('button', { name: 'Srpski A1' }));
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+
+    // → both: every translation is shown.
+    await user.click(screen.getByRole('button', { name: 'Сербский + перевод' }));
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    expect(screen.getByText('Перевод A2')).toBeInTheDocument();
+
+    // → reveal again: back to all-hidden, not carrying the earlier reveal.
+    await user.click(screen.getByRole('button', { name: 'Перевод по нажатию' }));
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Srpski A1' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+});
+
+describe('Reader — loading', () => {
+  it('does not show the previous text while the next one loads, and keeps the mode', async () => {
+    let resolveB: ((t: TextDetail) => void) | undefined;
+    getText.mockImplementation((id: number) => {
+      if (id === TEXT_B.id) return new Promise<TextDetail>((res) => (resolveB = res));
+      return Promise.resolve(TEXT_A);
+    });
+
+    const { rerender } = render(<Harness id={1} initialMode="serbianOnly" />);
+    await screen.findByText('Srpski A1');
+
+    // Begin loading the second text.
+    rerender(<Harness id={2} initialMode="serbianOnly" />);
+
+    // Old content is gone immediately; a loading placeholder is shown instead.
+    expect(screen.queryByText('Srpski A1')).not.toBeInTheDocument();
+    expect(screen.getByText('Загрузка…')).toBeInTheDocument();
+    // The mode switcher stays put so the chosen mode never flickers.
+    expect(screen.getByRole('button', { name: 'Только сербский' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    await act(async () => {
+      resolveB?.(TEXT_B);
+    });
+    expect(await screen.findByText('Srpski B1')).toBeInTheDocument();
+  });
+});

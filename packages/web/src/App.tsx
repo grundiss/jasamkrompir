@@ -3,6 +3,7 @@ import type { TextSummary } from '@jasamkrompir/shared';
 import { Reader } from './components/Reader';
 import { UpdateNotice } from './components/UpdateNotice';
 import { api } from './lib/api';
+import { DEFAULT_READING_MODE, type ReadingMode } from './lib/reading-mode';
 
 // The reader shell: a sidebar listing every text and a reading pane for the
 // selected one. Texts are bilingual Serbian passages with Russian translations,
@@ -11,6 +12,9 @@ export function App() {
   const [texts, setTexts] = useState<TextSummary[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The reading mode is held here (not in <Reader/>) so the choice persists
+  // across texts for the whole run of the app.
+  const [mode, setMode] = useState<ReadingMode>(DEFAULT_READING_MODE);
 
   useEffect(() => {
     api
@@ -59,7 +63,7 @@ export function App() {
             <p className="text-sm text-slate-500">{error}</p>
           </div>
         ) : (
-          selectedId != null && <Reader id={selectedId} />
+          selectedId != null && <Reader id={selectedId} mode={mode} onModeChange={setMode} />
         )}
       </main>
 

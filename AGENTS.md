@@ -173,8 +173,12 @@ does not change.
   `HealthResponse`, `ApiError`). **Dates cross the wire as ISO strings.**
 - **Web** — [`src/App.tsx`](packages/web/src/App.tsx) is the reader shell (sidebar
   list + reading pane); [`src/components/Reader.tsx`](packages/web/src/components/Reader.tsx)
-  renders one text's aligned paragraphs (with a toggle to hide the translation).
-  Both use the typed client in [`src/lib/api.ts`](packages/web/src/lib/api.ts).
+  renders one text in the chosen **reading mode** — `both` (Serbian ↔ Russian
+  aligned), `serbianOnly`, or `reveal` (Serbian only, each paragraph's translation
+  revealed on demand). The mode (`src/lib/reading-mode.ts`, switched via
+  `src/components/ReadingModeSwitcher.tsx`) lives in `App` so it persists across
+  texts for the run; per-paragraph reveals are local to `Reader` and reset on any
+  text/mode change. Both use the typed client in [`src/lib/api.ts`](packages/web/src/lib/api.ts).
   [`src/components/UpdateNotice.tsx`](packages/web/src/components/UpdateNotice.tsx)
   (fed by the shell bridge in [`src/lib/jasamkrompir.ts`](packages/web/src/lib/jasamkrompir.ts))
   is **shell integration, not content** — keep it.
@@ -212,6 +216,7 @@ yarn install                       # host deps (Husky, db tooling, typecheck)
 yarn dev                           # docker compose up: postgres + shared + api + web
 yarn db:generate && yarn db:migrate  # after any schema.ts change
 yarn typecheck                     # all workspaces
+yarn workspace @jasamkrompir/web test   # web unit/UI tests (Vitest + Testing Library)
 yarn build                         # shared -> api -> web
 yarn build:desktop                 # + shell bundle + content/seed bundle
 ```

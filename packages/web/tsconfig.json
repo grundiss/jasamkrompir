@@ -7,5 +7,8 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  // Tests are transpiled and run by Vitest, not the production `tsc` build, so
+  // keep them out of `tsc --noEmit` (and out of `vite build`).
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.test.tsx", "src/test"]
 }
