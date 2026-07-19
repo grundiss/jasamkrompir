@@ -12,6 +12,8 @@ interface SeedText {
   titleSr: string;
   titleRu: string;
   position: number;
+  // Root-relative URL of the narration track shipped as a web asset, if any.
+  audioUrl?: string;
   paragraphs: { sr: string; ru: string }[];
 }
 
@@ -21,6 +23,7 @@ export const seedTexts: SeedText[] = [
     titleSr: 'Ja se zovem Ivan',
     titleRu: 'Меня зовут Иван',
     position: 1,
+    audioUrl: '/audio/ja-se-zovem-ivan.mp3',
     paragraphs: [
       {
         sr: 'Ja se zovem Ivan. Ja sam iz Rusije. Imam dvadeset jednu godinu. Sada živim u Beogradu jer studiram na univerzitetu.',
@@ -60,6 +63,7 @@ export async function ensureSeeded(db: AppDb): Promise<void> {
           slug: seed.slug,
           titleSr: seed.titleSr,
           titleRu: seed.titleRu,
+          audioUrl: seed.audioUrl ?? null,
           position: seed.position,
         })
         .returning({ id: texts.id });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { TextDetail } from '@jasamkrompir/shared';
 import { api } from '../lib/api';
+import { AudioPlayer } from './AudioPlayer';
 import { ReadingModeSwitcher } from './ReadingModeSwitcher';
 import type { ReadingMode } from '../lib/reading-mode';
 
@@ -68,6 +69,14 @@ export function Reader({
           <ReadingModeSwitcher mode={mode} onChange={onModeChange} />
         </div>
       </header>
+
+      {/* Narration player, shown only for texts that ship with a recording.
+          Keyed by src so a different text always starts from a fresh element. */}
+      {text?.audioUrl && (
+        <div className="mb-8">
+          <AudioPlayer key={text.audioUrl} src={text.audioUrl} />
+        </div>
+      )}
 
       {error ? (
         <p className="text-sm text-slate-500">{error}</p>

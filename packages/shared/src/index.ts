@@ -29,6 +29,9 @@ export interface TextSummary {
   slug: string;
   titleSr: string;
   titleRu: string;
+  // Root-relative URL of an optional narration track (e.g. `/audio/<slug>.mp3`),
+  // or `null` when the text has no recording. Not every text has audio.
+  audioUrl: string | null;
 }
 
 // A single text with its full aligned body.

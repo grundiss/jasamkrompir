@@ -15,6 +15,13 @@
       "when": 1784485590470,
       "tag": "0001_awesome_shooting_star",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784500773236,
+      "tag": "0002_bizarre_pride",
+      "breakpoints": true
     }
   ]
 }

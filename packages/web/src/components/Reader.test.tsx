@@ -134,6 +134,23 @@ describe('Reader — switching modes', () => {
   });
 });
 
+describe('Reader — audio', () => {
+  it('shows the narration player for a text that has a recording', async () => {
+    render(<Harness id={1} initialMode="both" />); // TEXT_A has audioUrl
+    await screen.findByText('Srpski A1');
+
+    expect(screen.getByRole('button', { name: 'Воспроизвести' })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Перемотка записи' })).toBeInTheDocument();
+  });
+
+  it('shows no player for a text without a recording', async () => {
+    render(<Harness id={2} initialMode="both" />); // TEXT_B has audioUrl: null
+    await screen.findByText('Srpski B1');
+
+    expect(screen.queryByRole('button', { name: 'Воспроизвести' })).not.toBeInTheDocument();
+  });
+});
+
 describe('Reader — loading', () => {
   it('does not show the previous text while the next one loads, and keeps the mode', async () => {
     let resolveB: ((t: TextDetail) => void) | undefined;

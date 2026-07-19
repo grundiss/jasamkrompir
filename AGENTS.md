@@ -156,10 +156,26 @@ or edit texts, change the seed and/or insert rows — the architecture around th
 does not change.
 
 - **Schema** — [`packages/api/src/db/schema.ts`](packages/api/src/db/schema.ts):
-  `texts` (`id`, `slug` unique, `titleSr`, `titleRu`, `position`, `createdAt`) and
+  `texts` (`id`, `slug` unique, `titleSr`, `titleRu`, `audioUrl` nullable,
+  `position`, `createdAt`) and
   `paragraphs` (`id`, `textId` → `texts` cascade, `position`, `sr`, `ru`, unique on
   `(textId, position)`). After any change, `yarn db:generate` produces a migration
   in `packages/api/drizzle/`.
+- **Audio (optional per text)** — a text may have a narration track. The bytes are
+  **not** in the DB: the file ships as a web asset in
+  [`packages/web/public/audio/`](packages/web/public/audio) (Vite serves it in dev,
+  and it rides the web build into the content bundle, served over `app://`), and
+  `texts.audioUrl` stores its root-relative URL (`/audio/<slug>.mp3`) or NULL. No
+  CSP change is needed — `<audio>` falls back to `default-src 'self'`, which covers
+  the `app://` origin. To add audio to a text: drop the file in `public/audio/`, set
+  `audioUrl` in the seed (fresh installs), **and** add a migration that backfills the
+  existing row — the seed is insert-only, so an already-shipped text (e.g. a desktop
+  DB getting this as a content update) won't pick up the track from the seed alone
+  (see [`drizzle/0002_bizarre_pride.sql`](packages/api/drizzle/0002_bizarre_pride.sql)).
+  The player is [`web/src/components/AudioPlayer.tsx`](packages/web/src/components/AudioPlayer.tsx),
+  shown by `Reader` when `audioUrl` is set. (The shell's `app://` MIME map now
+  includes audio types — a correctness nicety in a future shell build; playback also
+  works via media sniffing without it, so the feature ships as a content update.)
 - **Seed** — [`packages/api/src/content/seed.ts`](packages/api/src/content/seed.ts):
   the texts shipped with the app, as data. `ensureSeeded(db)` inserts any text
   whose `slug` is not present yet (idempotent), so a fresh DB serves real content.

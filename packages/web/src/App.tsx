@@ -45,7 +45,12 @@ export function App() {
                   active ? 'bg-indigo-100 text-indigo-900' : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                <span className="block font-medium">{t.titleSr}</span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="truncate">{t.titleSr}</span>
+                  {t.audioUrl && (
+                    <AudioBadge className={active ? 'text-indigo-500' : 'text-slate-400'} />
+                  )}
+                </span>
                 <span className="block text-xs text-slate-500">{t.titleRu}</span>
               </button>
             );
@@ -69,5 +74,22 @@ export function App() {
 
       <UpdateNotice />
     </div>
+  );
+}
+
+// A small speaker glyph marking texts that ship with a narration track.
+function AudioBadge({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`h-3.5 w-3.5 shrink-0 ${className ?? ''}`}
+      fill="currentColor"
+      role="img"
+      aria-label="есть аудио"
+    >
+      <path d="M11 4.5a1 1 0 0 0-1.62-.78L5.65 6.7H3a1 1 0 0 0-1 1v3.6a1 1 0 0 0 1 1h2.65l3.73 2.98A1 1 0 0 0 11 14.5v-10Z" />
+      <path d="M14.5 8.2a1 1 0 0 1 1.4.2 4.6 4.6 0 0 1 0 5.2 1 1 0 1 1-1.6-1.2 2.6 2.6 0 0 0 0-2.8 1 1 0 0 1 .2-1.4Z" />
+      <path d="M16.8 5.5a1 1 0 0 1 1.38.28 8 8 0 0 1 0 8.44 1 1 0 1 1-1.66-1.1 6 6 0 0 0 0-6.24 1 1 0 0 1 .28-1.38Z" />
+    </svg>
   );
 }

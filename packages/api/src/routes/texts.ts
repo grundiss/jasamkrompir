@@ -19,6 +19,7 @@ export async function textsRoutes(app: FastifyInstance): Promise<void> {
         slug: texts.slug,
         titleSr: texts.titleSr,
         titleRu: texts.titleRu,
+        audioUrl: texts.audioUrl,
       })
       .from(texts)
       .orderBy(asc(texts.position), asc(texts.id));
@@ -50,6 +51,7 @@ export async function textsRoutes(app: FastifyInstance): Promise<void> {
       slug: text.slug,
       titleSr: text.titleSr,
       titleRu: text.titleRu,
+      audioUrl: text.audioUrl,
       createdAt: text.createdAt.toISOString(),
       paragraphs: rows,
     };

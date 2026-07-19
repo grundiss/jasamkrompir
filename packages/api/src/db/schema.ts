@@ -14,6 +14,9 @@ export const texts = pgTable('texts', {
   slug: text('slug').notNull().unique(),
   titleSr: text('title_sr').notNull(),
   titleRu: text('title_ru').notNull(),
+  // Optional narration track: a root-relative URL to an audio file shipped as a
+  // web asset (e.g. `/audio/<slug>.mp3`), or NULL when the text has no recording.
+  audioUrl: text('audio_url'),
   // Ordering of texts in the reader's list. Lower comes first.
   position: integer('position').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
