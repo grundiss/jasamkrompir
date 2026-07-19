@@ -4,10 +4,13 @@ Monorepo web app: Fastify backend + React frontend, sharing TypeScript types.
 
 Architecturally it is a **rarely-updated desktop shell + automatically delivered
 content** (like its sibling project). The full technology stack — Electron shell,
-signed over-the-air content updates, PGlite/Postgres, Drizzle — is in place. The
-**content itself is still at a "Hello World!" stage**: a single `greetings` table,
-a `GET /api/hello` endpoint, and a page that renders the message. The real content
-model will be designed later; see [AGENTS.md](AGENTS.md) for how it slots in.
+signed over-the-air content updates, PGlite/Postgres, Drizzle — is in place.
+
+The app is a **reader for learning Serbian**: each "page" is one bilingual text —
+a short Serbian passage with its Russian translation, split into aligned
+paragraphs so the two languages sit side by side. Texts live in the database
+(`texts` + `paragraphs`) and are served by `GET /api/texts` / `GET /api/texts/:id`;
+see [AGENTS.md](AGENTS.md) for the content model.
 
 ## Stack
 
@@ -44,8 +47,8 @@ yarn db:generate              # generate SQL migration from the schema
 yarn db:migrate               # apply migrations (talks to Postgres on :5432)
 ```
 
-- API: http://localhost:3000 (try `GET /health` or `GET /api/hello`)
-- Web: http://localhost:5173 (renders "Hello World!" from the API)
+- API: http://localhost:3000 (try `GET /health` or `GET /api/texts`)
+- Web: http://localhost:5173 (the reader: text list + bilingual reading pane)
 
 Everything runs in Docker Compose with hot reload — edit files under `packages/`
 and the api restarts / the web HMRs automatically.
