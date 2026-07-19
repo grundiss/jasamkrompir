@@ -1,0 +1,61 @@
+appId: ru.grundiss.jasamkrompir
+productName: JaSamKrompir
+copyright: © Grundiss
+
+# Pinned explicitly: with Yarn-workspace hoisting, electron lives in the root
+# node_modules and electron-builder can't auto-detect its version. Keep in sync
+# with the electron devDependency.
+electronVersion: 42.4.1
+
+directories:
+  output: release
+  buildResources: build
+
+# No native modules (PGlite is pure WASM), so nothing to rebuild.
+npmRebuild: false
+
+# Ship only English. Electron bundles ~220 locale packs (~48 MB) by default.
+electronLanguages:
+  - en-US
+
+# Squeeze the dmg/zip as hard as possible.
+compression: maximum
+
+# Drop PGlite's source maps — not needed in a shipped build (~2.4 MB).
+files:
+  - '**/*'
+  - '!**/node_modules/@electric-sql/pglite/dist/*.map'
+
+# PGlite ships .wasm / .data assets that must live on the real filesystem,
+# not inside the asar archive.
+asarUnpack:
+  - '**/node_modules/@electric-sql/pglite/**'
+
+# The seed content bundle (frontend + backend + migrations + bundle.json),
+# produced by scripts/build-content.mjs. On first launch the shell installs it
+# into userData/content/<version> and serves everything from there; OTA content
+# updates then replace it. See src/shell/content-store.ts (ensureSeeded).
+extraResources:
+  - from: content-seed
+    to: content-seed
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch: universal
+    - target: zip # electron-updater applies updates from the .zip, not the .dmg
+      arch: universal
+  # --- Unsigned for now ---
+  # macOS auto-update will NOT apply until the app is signed + notarized.
+  # To enable later: remove `identity: null`, set `notarize: true` and
+  # `hardenedRuntime: true`, and provide the signing/notarization secrets in CI
+  # (CSC_LINK, CSC_KEY_PASSWORD, APPLE_API_KEY/APPLE_API_KEY_ID/APPLE_API_ISSUER).
+  identity: null
+  notarize: false
+
+# Auto-update feed. electron-builder also generates latest-mac.yml here.
+publish:
+  provider: github
+  owner: grundiss
+  repo: jasamkrompir

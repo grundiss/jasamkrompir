@@ -1,0 +1,44 @@
+{
+  "name": "jasamkrompir",
+  "version": "0.0.1",
+  "license": "MIT",
+  "private": true,
+  "packageManager": "yarn@1.22.22",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker compose up",
+    "dev:build": "docker compose up --build",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f",
+    "build": "yarn workspace @jasamkrompir/shared build && yarn workspace @jasamkrompir/api build && yarn workspace @jasamkrompir/web build",
+    "build:desktop": "yarn workspace @jasamkrompir/shared build && yarn workspace @jasamkrompir/api build && yarn workspace @jasamkrompir/web build && yarn workspace @jasamkrompir/desktop build && yarn workspace @jasamkrompir/desktop build:content",
+    "desktop:dev": "yarn build:desktop && yarn workspace @jasamkrompir/desktop start",
+    "desktop:dist": "yarn build:desktop && yarn workspace @jasamkrompir/desktop dist",
+    "content:build": "yarn workspace @jasamkrompir/desktop build:content",
+    "content:pack": "yarn workspace @jasamkrompir/desktop pack:content",
+    "content:publish": "yarn workspace @jasamkrompir/desktop publish:content",
+    "content:serve": "yarn workspace @jasamkrompir/desktop serve:content",
+    "content:tag": "node scripts/release-content.mjs",
+    "content:release": "yarn build && yarn workspace @jasamkrompir/desktop build:content && yarn workspace @jasamkrompir/desktop pack:content && yarn workspace @jasamkrompir/desktop publish:content",
+    "gen:keys": "yarn workspace @jasamkrompir/desktop gen:keys",
+    "db:generate": "yarn workspace @jasamkrompir/api db:generate",
+    "db:migrate": "yarn workspace @jasamkrompir/api db:migrate",
+    "db:push": "yarn workspace @jasamkrompir/api db:push",
+    "db:studio": "yarn workspace @jasamkrompir/api db:studio",
+    "typecheck": "yarn workspaces run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css,md,yml,yaml}": "prettier --write"
+  }
+}
