@@ -11,11 +11,13 @@ stable infrastructure shipped as an Electron binary; the actual app (frontend +
 backend + migrations) is delivered as **signed content bundles** that update
 over-the-air, without re-shipping the binary.
 
-> **Content status: "Hello World".** The real content model has not been
-> designed yet. Today the content is a single placeholder — a `greetings` table,
-> a `GET /api/hello` endpoint, and a page that renders "Hello World!". The whole
-> data stack is deliberately kept wired end-to-end (see "Content placeholder"
-> below) so that when the real content arrives it slots into a proven pipeline.
+> **Content: a bilingual Serbian reader.** Each "page" is one **text** — a short
+> Serbian passage with its Russian translation, split into **paragraphs** aligned
+> Serbian ↔ Russian so the two languages sit side by side. Texts live in the DB
+> (`texts` + `paragraphs`), are served by `GET /api/texts` (list) and
+> `GET /api/texts/:id` (detail), and the seed content ships in the bundle (see
+> "Content model" below). Add more texts by extending the seed and/or inserting
+> rows — the surrounding pipeline does not change.
 > There is exactly one user (the owner), so there is **no auth, no
 > multi-tenancy, and no security layer** at the application level — do not add
 > them unless asked. (This is separate from the content-update _trust_ boundary,
@@ -145,27 +147,35 @@ yarn content:release           # build + pack + publish in one shot
 yarn content:serve             # serve content-dist/ locally to test updates
 ```
 
-## Content placeholder (the "Hello World" layer)
+## Content model (the bilingual reader)
 
-The content is intentionally minimal but wired **end-to-end**, so every
-technology in the stack is exercised before the real content exists. When you
-build the real content, replace these in place — the architecture around them
+Each "page" is one **text**: a Serbian passage with its Russian translation,
+split into **paragraphs** aligned by order (`sr` ↔ `ru`). The content is wired
+**end-to-end** through the same pipeline the shell + OTA updates rely on. To add
+or edit texts, change the seed and/or insert rows — the architecture around them
 does not change.
 
-- **Schema** — one table in
-  [`packages/api/src/db/schema.ts`](packages/api/src/db/schema.ts): `greetings`
-  (`id`, `text`, `createdAt`). Change it, then `yarn db:generate` to produce a
-  migration in `packages/api/drizzle/`.
-- **API** — [`packages/api/src/routes/hello.ts`](packages/api/src/routes/hello.ts):
-  `GET /api/hello` reads the first `greetings` row (seeding `"Hello World!"` on
-  first call) and returns `{ message }`. Registered in
-  [`src/app.ts`](packages/api/src/app.ts) via `app.register(helloRoutes)`.
+- **Schema** — [`packages/api/src/db/schema.ts`](packages/api/src/db/schema.ts):
+  `texts` (`id`, `slug` unique, `titleSr`, `titleRu`, `position`, `createdAt`) and
+  `paragraphs` (`id`, `textId` → `texts` cascade, `position`, `sr`, `ru`, unique on
+  `(textId, position)`). After any change, `yarn db:generate` produces a migration
+  in `packages/api/drizzle/`.
+- **Seed** — [`packages/api/src/content/seed.ts`](packages/api/src/content/seed.ts):
+  the texts shipped with the app, as data. `ensureSeeded(db)` inserts any text
+  whose `slug` is not present yet (idempotent), so a fresh DB serves real content.
+  Add a text by appending to `seedTexts`.
+- **API** — [`packages/api/src/routes/texts.ts`](packages/api/src/routes/texts.ts):
+  `GET /api/texts` ensures the seed and returns the list of summaries;
+  `GET /api/texts/:id` returns one text with its paragraphs (404 if missing).
+  Registered in [`src/app.ts`](packages/api/src/app.ts) via `app.register(textsRoutes)`.
 - **Shared DTOs** — [`packages/shared/src/index.ts`](packages/shared/src/index.ts):
-  `Greeting`, `HelloResponse` (plus `HealthResponse`, `ApiError`). **Dates cross
-  the wire as ISO strings.**
-- **Web** — [`src/App.tsx`](packages/web/src/App.tsx) fetches `/api/hello` via the
-  typed client in [`src/lib/api.ts`](packages/web/src/lib/api.ts) and renders the
-  message. [`src/components/UpdateNotice.tsx`](packages/web/src/components/UpdateNotice.tsx)
+  `Paragraph`, `TextSummary`, `TextDetail`, `TextListResponse` (plus
+  `HealthResponse`, `ApiError`). **Dates cross the wire as ISO strings.**
+- **Web** — [`src/App.tsx`](packages/web/src/App.tsx) is the reader shell (sidebar
+  list + reading pane); [`src/components/Reader.tsx`](packages/web/src/components/Reader.tsx)
+  renders one text's aligned paragraphs (with a toggle to hide the translation).
+  Both use the typed client in [`src/lib/api.ts`](packages/web/src/lib/api.ts).
+  [`src/components/UpdateNotice.tsx`](packages/web/src/components/UpdateNotice.tsx)
   (fed by the shell bridge in [`src/lib/jasamkrompir.ts`](packages/web/src/lib/jasamkrompir.ts))
   is **shell integration, not content** — keep it.
 
@@ -174,10 +184,11 @@ does not change.
 Base URL `http://localhost:3000` (dev) or the loopback URL injected by the shell
 (desktop). JSON in/out. Errors are `{ error, message }` with an appropriate status.
 
-| Method | Path         | Notes                                                       |
-| ------ | ------------ | ----------------------------------------------------------- |
-| GET    | `/health`    | Liveness: `{ status: 'ok', timestamp }`.                    |
-| GET    | `/api/hello` | Placeholder content: `{ message }` (seeds a greeting once). |
+| Method | Path             | Notes                                                           |
+| ------ | ---------------- | --------------------------------------------------------------- |
+| GET    | `/health`        | Liveness: `{ status: 'ok', timestamp }`.                        |
+| GET    | `/api/texts`     | List of texts (`TextSummary[]`); ensures the seed on first hit. |
+| GET    | `/api/texts/:id` | One text with aligned paragraphs (`TextDetail`); 404 if absent. |
 
 ## Conventions
 
@@ -185,7 +196,7 @@ Base URL `http://localhost:3000` (dev) or the loopback URL injected by the shell
   import them. Drizzle row types (`$inferSelect`) stay in the api and are mapped
   to the shared serializable DTOs at the route boundary.
 - ESM throughout; intra-package imports use explicit `.js` extensions
-  (`./routes/hello.js`) per the TS/ESM setup.
+  (`./routes/texts.js`) per the TS/ESM setup.
 - Desktop-first UI: prefer spacious multi-column layouts, sidebar navigation, and
   scannable tables/lists over mobile-first constraints.
 - Formatting is Prettier (Husky pre-commit runs lint-staged). Run
@@ -239,12 +250,13 @@ Prefer driving the running app over manual checks. The stack exposes the API on
 :3000 and web on :5173. Quick API smoke test:
 
 ```bash
-curl -s localhost:3000/health          # {"status":"ok",...}
-curl -s localhost:3000/api/hello        # {"message":"Hello World!"}
+curl -s localhost:3000/health           # {"status":"ok",...}
+curl -s localhost:3000/api/texts         # {"texts":[{"id":1,"slug":"ja-se-zovem-ivan",...}]}
+curl -s localhost:3000/api/texts/1       # one text with its aligned paragraphs
 ```
 
-For UI changes, load http://localhost:5173 and confirm the page renders the
-message from `/api/hello`.
+For UI changes, load http://localhost:5173 and confirm the reader lists the
+texts and renders the selected one's Serbian + Russian paragraphs.
 
 To verify the **content updater** end-to-end (no publishing needed), follow the
 "Testing update + rollback locally" recipe in

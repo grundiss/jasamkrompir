@@ -3,7 +3,7 @@ import fastifyStatic from '@fastify/static';
 import type { HealthResponse } from '@jasamkrompir/shared';
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import type { AppDb } from './db/index.js';
-import { helloRoutes } from './routes/hello.js';
+import { textsRoutes } from './routes/texts.js';
 
 // Make the injected database available to every route as `app.db` /
 // `request.server.db`, so routes don't depend on a specific driver.
@@ -45,7 +45,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   });
 
   // API routes are registered before static so they always win over the SPA.
-  await app.register(helloRoutes);
+  await app.register(textsRoutes);
 
   if (opts.serveWebRoot) {
     // `wildcard: false` avoids a greedy `/*` route; SPA deep links are handled

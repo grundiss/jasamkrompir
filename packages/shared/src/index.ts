@@ -13,19 +13,31 @@ export interface ApiError {
 // ---------------------------------------------------------------------------
 // Content DTOs (dates are ISO strings over the wire)
 //
-// The real content model is not designed yet — the app ships at a "Hello World"
-// stage. `Greeting` is the single placeholder domain type, carried end-to-end
-// through the DB + API + web so every technology stays wired. Replace this with
-// the real content model when it exists.
+// The app is a bilingual Serbian reader: each "page" is one `Text` — a short
+// Serbian passage with its Russian translation, split into aligned paragraphs.
 // ---------------------------------------------------------------------------
 
-export interface Greeting {
+// One passage rendered in both languages, aligned side by side.
+export interface Paragraph {
+  sr: string;
+  ru: string;
+}
+
+// A text as it appears in the reader's list (no body).
+export interface TextSummary {
   id: number;
-  text: string;
+  slug: string;
+  titleSr: string;
+  titleRu: string;
+}
+
+// A single text with its full aligned body.
+export interface TextDetail extends TextSummary {
+  paragraphs: Paragraph[];
   createdAt: string;
 }
 
-// The API's Hello-World endpoint response.
-export interface HelloResponse {
-  message: string;
+// Response of `GET /api/texts`.
+export interface TextListResponse {
+  texts: TextSummary[];
 }

@@ -1,14 +1,40 @@
-import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, pgTable, serial, text, timestamp, unique } from 'drizzle-orm/pg-core';
 
-// Placeholder content table. The real content model is not designed yet — this
-// single trivial table keeps the whole data stack (Drizzle schema → generated
-// migration → PGlite/Postgres → API) exercised at the "Hello World" stage.
-// Replace it when the real content model exists.
-export const greetings = pgTable('greetings', {
+// The content model for the Serbian reader. Each "page" of the app is one
+// bilingual `text`: a short Serbian passage paired with its Russian translation,
+// split into aligned `paragraphs` so the two languages can be shown side by side.
+//
+// A text owns an ordered list of paragraphs; every paragraph carries both the
+// Serbian (`sr`) and Russian (`ru`) rendering of the same passage, aligned by
+// `position`. New texts are added by inserting a `texts` row plus its paragraphs.
+
+export const texts = pgTable('texts', {
   id: serial('id').primaryKey(),
-  text: text('text').notNull(),
+  // Stable, human-readable identifier used for seeding idempotency and routing.
+  slug: text('slug').notNull().unique(),
+  titleSr: text('title_sr').notNull(),
+  titleRu: text('title_ru').notNull(),
+  // Ordering of texts in the reader's list. Lower comes first.
+  position: integer('position').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type Greeting = typeof greetings.$inferSelect;
-export type NewGreeting = typeof greetings.$inferInsert;
+export const paragraphs = pgTable(
+  'paragraphs',
+  {
+    id: serial('id').primaryKey(),
+    textId: integer('text_id')
+      .notNull()
+      .references(() => texts.id, { onDelete: 'cascade' }),
+    // Ordering within a text; the Serbian and Russian sides share this index.
+    position: integer('position').notNull(),
+    sr: text('sr').notNull(),
+    ru: text('ru').notNull(),
+  },
+  (t) => [unique('paragraphs_text_position').on(t.textId, t.position)],
+);
+
+export type Text = typeof texts.$inferSelect;
+export type NewText = typeof texts.$inferInsert;
+export type Paragraph = typeof paragraphs.$inferSelect;
+export type NewParagraph = typeof paragraphs.$inferInsert;
