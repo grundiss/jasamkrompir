@@ -1,0 +1,36 @@
+node_modules/
+dist/
+build/
+.DS_Store
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# drizzle
+packages/api/drizzle/meta/_journal.json.bak
+
+# vite
+packages/web/dist/
+.vite/
+
+# electron-builder output
+packages/desktop/release/
+
+# content updates: signing secret + generated bundles (rebuilt from source)
+packages/desktop/keys/
+packages/desktop/content-build/
+packages/desktop/content-dist/
+packages/desktop/content-seed/

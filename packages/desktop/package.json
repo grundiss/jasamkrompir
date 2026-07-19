@@ -1,0 +1,35 @@
+{
+  "name": "@jasamkrompir/desktop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "JaSamKrompir desktop app (Electron)",
+  "author": "Grundiss",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:content": "node scripts/build-content.mjs",
+    "pack:content": "node scripts/pack-content.mjs",
+    "publish:content": "node scripts/publish-content.mjs",
+    "serve:content": "node scripts/serve-content.mjs",
+    "gen:keys": "node scripts/gen-keys.mjs",
+    "start": "electron .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dist": "electron-builder",
+    "dist:publish": "electron-builder --publish always"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.3",
+    "drizzle-orm": "^0.38.4",
+    "electron-updater": "^6.8.9",
+    "tar": "^7.5.16"
+  },
+  "devDependencies": {
+    "@jasamkrompir/api": "*",
+    "@jasamkrompir/shared": "*",
+    "@types/node": "^22.10.7",
+    "electron": "42.4.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.1"
+  }
+}
