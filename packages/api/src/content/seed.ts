@@ -10,6 +10,9 @@ import {
   texts,
 } from '../db/schema.js';
 import { type SeedQuest, validateQuestGraph } from './quest-validate.js';
+import { biranjeNamestajaZaDnevnuSobu } from './quests/biranje-namestaja-za-dnevnu-sobu.js';
+import { cenkanjeNaPijaci } from './quests/cenkanje-na-pijaci.js';
+import { pogresanRacunURestoranu } from './quests/pogresan-racun-u-restoranu.js';
 import { pozivDostavnojSluzbi } from './quests/poziv-dostavnoj-sluzbi.js';
 
 // The seed content shipped with the app. Each entry is either a bilingual text
@@ -56,7 +59,12 @@ export const seedTexts: SeedText[] = [
   },
 ];
 
-export const seedQuests: SeedQuest[] = [pozivDostavnojSluzbi];
+export const seedQuests: SeedQuest[] = [
+  pozivDostavnojSluzbi,
+  pogresanRacunURestoranu,
+  biranjeNamestajaZaDnevnuSobu,
+  cenkanjeNaPijaci,
+];
 
 // Validate every seed quest at module load so a broken graph fails immediately
 // rather than after install.
