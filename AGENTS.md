@@ -233,8 +233,9 @@ and vocabulary review. Progress is session-only (not persisted).
   [`QuestPlayer`](packages/web/src/components/quest/QuestPlayer.tsx) and friends.
   Reading modes (`both` / `serbianOnly` / `reveal`) apply to quest copy too; the
   Russian task prompt (`promptRu`) stays visible even in `serbianOnly` because it
-  tells the learner what to do. Mode lives in `App`; quest progress resets when
-  another content item is selected.
+  tells the learner what to do. In `reveal`, plain quest copy uses hold-to-peek,
+  but reply choices use hover/focus-to-peek (click already means select). Mode
+  lives in `App`; quest progress resets when another content item is selected.
   [`src/components/UpdateNotice.tsx`](packages/web/src/components/UpdateNotice.tsx)
   (fed by the shell bridge in [`src/lib/jasamkrompir.ts`](packages/web/src/lib/jasamkrompir.ts))
   is **shell integration, not content** — keep it.

@@ -1,4 +1,5 @@
 import type { QuestChoice as QuestChoiceData, QuestChoiceQuality } from '@jasamkrompir/shared';
+import { useHoverReveal } from '../../lib/hover-reveal';
 import type { ReadingMode } from '../../lib/reading-mode';
 import { LocalizedTextView } from './LocalizedTextView';
 
@@ -40,6 +41,11 @@ export function QuestChoiceButton({
         : 'border-rose-400 bg-rose-50 ring-2 ring-rose-200'
     : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40';
 
+  // Click selects the answer, so reveal mode peeks on hover/focus of this
+  // button (not hold) — and LocalizedTextView must not nest another <button>.
+  const peek = useHoverReveal(mode);
+  const revealOpen = mode === 'reveal' ? peek.open : false;
+
   return (
     <button
       type="button"
@@ -47,6 +53,10 @@ export function QuestChoiceButton({
       disabled={locked}
       aria-pressed={selected}
       aria-disabled={disabled}
+      onMouseEnter={mode === 'reveal' ? peek.onMouseEnter : undefined}
+      onMouseLeave={mode === 'reveal' ? peek.onMouseLeave : undefined}
+      onFocus={mode === 'reveal' ? peek.onFocus : undefined}
+      onBlur={mode === 'reveal' ? peek.onBlur : undefined}
       className={`w-full rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 disabled:cursor-default ${selectedRing} ${
         disabled ? 'opacity-50' : ''
       }`}
@@ -65,7 +75,13 @@ export function QuestChoiceButton({
           {QUALITY_LABEL[choice.quality]}
         </span>
       )}
-      <LocalizedTextView text={choice.text} mode={mode} revealId={`choice-${choice.id}`} />
+      <LocalizedTextView
+        text={choice.text}
+        mode={mode}
+        revealId={`choice-${choice.id}`}
+        revealStrategy="hover"
+        revealOpen={revealOpen}
+      />
     </button>
   );
 }

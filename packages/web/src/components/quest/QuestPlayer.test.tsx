@@ -94,6 +94,23 @@ describe('QuestPlayer', () => {
     expect(screen.getByText('Как ответить?')).toBeInTheDocument();
   });
 
+  it('peeks a choice translation on hover in reveal mode without selecting', async () => {
+    const user = userEvent.setup();
+    render(<QuestPlayer quest={QUEST_A} mode="reveal" />);
+
+    const best = screen.getByRole('button', { name: /Ljubazan odgovor/ });
+    expect(screen.queryByText('Вежливый ответ')).not.toBeInTheDocument();
+
+    await user.hover(best);
+    expect(screen.getByText('Вежливый ответ')).toBeInTheDocument();
+    // Hover only peeks — does not lock in a choice.
+    expect(best).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByText('Odlično!')).not.toBeInTheDocument();
+
+    await user.unhover(best);
+    expect(screen.queryByText('Вежливый ответ')).not.toBeInTheDocument();
+  });
+
   it('resets progress when a different quest id is passed', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<QuestPlayer quest={QUEST_A} mode="both" />);
