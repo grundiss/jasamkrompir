@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TextDetail } from '@jasamkrompir/shared';
+import type { ContentDetail } from '@jasamkrompir/shared';
 import { Reader } from './Reader';
 import type { ReadingMode } from '../lib/reading-mode';
 import { detailById, TEXT_A, TEXT_B } from '../test/fixtures';
@@ -167,9 +167,9 @@ describe('Reader — audio', () => {
 
 describe('Reader — loading', () => {
   it('does not show the previous text while the next one loads, and keeps the mode', async () => {
-    let resolveB: ((t: TextDetail) => void) | undefined;
+    let resolveB: ((t: ContentDetail) => void) | undefined;
     getText.mockImplementation((id: number) => {
-      if (id === TEXT_B.id) return new Promise<TextDetail>((res) => (resolveB = res));
+      if (id === TEXT_B.id) return new Promise<ContentDetail>((res) => (resolveB = res));
       return Promise.resolve(TEXT_A);
     });
 

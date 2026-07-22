@@ -11,13 +11,19 @@ stable infrastructure shipped as an Electron binary; the actual app (frontend +
 backend + migrations) is delivered as **signed content bundles** that update
 over-the-air, without re-shipping the binary.
 
-> **Content: a bilingual Serbian reader.** Each "page" is one **text** — a short
-> Serbian passage with its Russian translation, split into **paragraphs** aligned
-> Serbian ↔ Russian so the two languages sit side by side. Texts live in the DB
-> (`texts` + `paragraphs`), are served by `GET /api/texts` (list) and
-> `GET /api/texts/:id` (detail), and the seed content ships in the bundle (see
-> "Content model" below). Add more texts by extending the seed and/or inserting
-> rows — the surrounding pipeline does not change.
+> **Content: a bilingual Serbian reader with interactive quests.** Each sidebar
+> entry is one content item discriminated by `kind`:
+>
+> - **`text`** — a short Serbian passage with its Russian translation, split into
+>   **paragraphs** aligned Serbian ↔ Russian.
+> - **`quest`** — an interactive decision-based dialogue (scenes → reply choices →
+>   other scenes or endings), with optional vocabulary review at the end.
+>
+> Content lives in the DB (`texts` plus kind-specific tables), is served by
+> `GET /api/texts` (list) and `GET /api/texts/:id` (detail as a discriminated
+> union), and the seed content ships in the bundle (see "Content model" below).
+> Add more items by extending the seed and/or inserting rows — the surrounding
+> pipeline does not change.
 > There is exactly one user (the owner), so there is **no auth, no
 > multi-tenancy, and no security layer** at the application level — do not add
 > them unless asked. (This is separate from the content-update _trust_ boundary,
@@ -147,16 +153,16 @@ yarn content:release           # build + pack + publish in one shot
 yarn content:serve             # serve content-dist/ locally to test updates
 ```
 
-## Content model (the bilingual reader)
+## Content model (texts + quests)
 
-Each "page" is one **text**: a Serbian passage with its Russian translation,
-split into **paragraphs** aligned by order (`sr` ↔ `ru`). The content is wired
-**end-to-end** through the same pipeline the shell + OTA updates rely on. To add
-or edit texts, change the seed and/or insert rows — the architecture around them
-does not change.
+Each sidebar entry is one row in `texts`, discriminated by
+`kind: 'text' | 'quest'`. Existing rows default to `text`. The content is wired
+**end-to-end** through the same pipeline the shell + OTA updates rely on.
+
+### Linear texts (`kind: 'text'`)
 
 - **Schema** — [`packages/api/src/db/schema.ts`](packages/api/src/db/schema.ts):
-  `texts` (`id`, `slug` unique, `titleSr`, `titleRu`, `audioUrl` nullable,
+  `texts` (`id`, `slug` unique, `kind`, `titleSr`, `titleRu`, `audioUrl` nullable,
   `position`, `createdAt`) and
   `paragraphs` (`id`, `textId` → `texts` cascade, `position`, `sr`, `ru`, unique on
   `(textId, position)`). After any change, `yarn db:generate` produces a migration
@@ -176,25 +182,59 @@ does not change.
   shown by `Reader` when `audioUrl` is set. (The shell's `app://` MIME map now
   includes audio types — a correctness nicety in a future shell build; playback also
   works via media sniffing without it, so the feature ships as a content update.)
+
+### Interactive quests (`kind: 'quest'`)
+
+A quest is a branching dialogue exercise (no typing). The learner reads the
+employee's Serbian line (with Russian per reading mode), picks a Serbian reply,
+sees quality-tagged feedback (`best` / `acceptable` / `poor`), then Continues to
+the choice's `nextSceneId` (another scene or an ending). Endings offer restart
+and vocabulary review. Progress is session-only (not persisted).
+
+- **Schema** (normalized, all cascade from `texts`):
+  - `quests` — 1:1 metadata (`description*`, `intro*`, `objective*`, `startSceneId`)
+  - `quest_scenes` — ordered scenes (`sceneId`, `phase*`, `employee*`, `promptRu`, …)
+  - `quest_choices` — ordered replies per scene (`choiceId`, `quality`, `feedback*`,
+    `nextSceneId`, …)
+  - `quest_endings` — `success` / `partial` endings
+  - `quest_vocabulary` — review terms with examples
+- **Graph validation** — [`quest-validate.ts`](packages/api/src/content/quest-validate.ts)
+  checks that `startSceneId` exists and every `nextSceneId` points at a scene or
+  ending. Runs at seed module load and again when serving a quest detail.
+- **Seed** — append to `seedQuests` in
+  [`seed.ts`](packages/api/src/content/seed.ts) (or add a file under
+  `content/quests/` and import it). `ensureSeeded` inserts by slug if missing —
+  safe to re-run; does not update existing rows. Quests ship through the normal
+  **content bundle** path (build → pack → publish); no shell release needed.
+- **How to add another quest**: write the authoring JSON (same shape as
+  `poziv-dostavnoj-sluzbi`), validate the graph locally, add it to `seedQuests`,
+  bump `packages/desktop/package.json` `version`, then `yarn content:release`
+  (or test with `yarn content:serve`). Do not delete or rewrite existing seed
+  texts/quests in place for already-shipped DBs without a backfill migration.
+
+### Shared plumbing
+
 - **Seed** — [`packages/api/src/content/seed.ts`](packages/api/src/content/seed.ts):
-  the texts shipped with the app, as data. `ensureSeeded(db)` inserts any text
-  whose `slug` is not present yet (idempotent), so a fresh DB serves real content.
-  Add a text by appending to `seedTexts`.
+  `seedTexts` + `seedQuests`; `ensureSeeded(db)` inserts any item whose `slug` is
+  not present yet (idempotent).
 - **API** — [`packages/api/src/routes/texts.ts`](packages/api/src/routes/texts.ts):
-  `GET /api/texts` ensures the seed and returns the list of summaries;
-  `GET /api/texts/:id` returns one text with its paragraphs (404 if missing).
+  `GET /api/texts` ensures the seed and returns summaries (including `kind`);
+  `GET /api/texts/:id` returns `ContentDetail` (`TextDetail | QuestDetail`).
   Registered in [`src/app.ts`](packages/api/src/app.ts) via `app.register(textsRoutes)`.
 - **Shared DTOs** — [`packages/shared/src/index.ts`](packages/shared/src/index.ts):
-  `Paragraph`, `TextSummary`, `TextDetail`, `TextListResponse` (plus
-  `HealthResponse`, `ApiError`). **Dates cross the wire as ISO strings.**
+  `ContentKind`, `ContentSummary`, `TextDetail`, `QuestDetail`, `QuestScene`,
+  `QuestChoice`, `QuestEnding`, `QuestVocabularyItem`, `LocalizedText`,
+  `TextListResponse` (plus `HealthResponse`, `ApiError`). **Dates cross the wire
+  as ISO strings.**
 - **Web** — [`src/App.tsx`](packages/web/src/App.tsx) is the reader shell (sidebar
-  list + reading pane); [`src/components/Reader.tsx`](packages/web/src/components/Reader.tsx)
-  renders one text in the chosen **reading mode** — `both` (Serbian ↔ Russian
-  aligned), `serbianOnly`, or `reveal` (Serbian only, each paragraph's translation
-  revealed on demand). The mode (`src/lib/reading-mode.ts`, switched via
-  `src/components/ReadingModeSwitcher.tsx`) lives in `App` so it persists across
-  texts for the run; per-paragraph reveals are local to `Reader` and reset on any
-  text/mode change. Both use the typed client in [`src/lib/api.ts`](packages/web/src/lib/api.ts).
+  list + reading pane; quests show a subtle «Квест» label).
+  [`src/components/Reader.tsx`](packages/web/src/components/Reader.tsx) switches on
+  `kind`: linear texts use paragraph views; quests use
+  [`QuestPlayer`](packages/web/src/components/quest/QuestPlayer.tsx) and friends.
+  Reading modes (`both` / `serbianOnly` / `reveal`) apply to quest copy too; the
+  Russian task prompt (`promptRu`) stays visible even in `serbianOnly` because it
+  tells the learner what to do. Mode lives in `App`; quest progress resets when
+  another content item is selected.
   [`src/components/UpdateNotice.tsx`](packages/web/src/components/UpdateNotice.tsx)
   (fed by the shell bridge in [`src/lib/jasamkrompir.ts`](packages/web/src/lib/jasamkrompir.ts))
   is **shell integration, not content** — keep it.
@@ -204,11 +244,11 @@ does not change.
 Base URL `http://localhost:3000` (dev) or the loopback URL injected by the shell
 (desktop). JSON in/out. Errors are `{ error, message }` with an appropriate status.
 
-| Method | Path             | Notes                                                           |
-| ------ | ---------------- | --------------------------------------------------------------- |
-| GET    | `/health`        | Liveness: `{ status: 'ok', timestamp }`.                        |
-| GET    | `/api/texts`     | List of texts (`TextSummary[]`); ensures the seed on first hit. |
-| GET    | `/api/texts/:id` | One text with aligned paragraphs (`TextDetail`); 404 if absent. |
+| Method | Path             | Notes                                                                       |
+| ------ | ---------------- | --------------------------------------------------------------------------- |
+| GET    | `/health`        | Liveness: `{ status: 'ok', timestamp }`.                                    |
+| GET    | `/api/texts`     | List of content summaries (`kind` + titles); ensures the seed on first hit. |
+| GET    | `/api/texts/:id` | `TextDetail` or `QuestDetail` (discriminated by `kind`); 404 if absent.     |
 
 ## Conventions
 
@@ -233,6 +273,7 @@ yarn dev                           # docker compose up: postgres + shared + api 
 yarn db:generate && yarn db:migrate  # after any schema.ts change
 yarn typecheck                     # all workspaces
 yarn workspace @jasamkrompir/web test   # web unit/UI tests (Vitest + Testing Library)
+yarn workspace @jasamkrompir/api test   # api route + seed-graph tests (Vitest + PGlite)
 yarn build                         # shared -> api -> web
 yarn build:desktop                 # + shell bundle + content/seed bundle
 ```

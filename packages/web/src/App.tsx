@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import type { TextSummary } from '@jasamkrompir/shared';
+import type { ContentSummary } from '@jasamkrompir/shared';
 import { Reader } from './components/Reader';
 import { UpdateNotice } from './components/UpdateNotice';
 import { api } from './lib/api';
 import { DEFAULT_READING_MODE, type ReadingMode } from './lib/reading-mode';
 
-// The reader shell: a sidebar listing every text and a reading pane for the
-// selected one. Texts are bilingual Serbian passages with Russian translations,
-// fetched from the backend.
+// The reader shell: a sidebar listing every content item (linear texts and
+// interactive quests) and a reading pane for the selected one.
 export function App() {
-  const [texts, setTexts] = useState<TextSummary[]>([]);
+  const [texts, setTexts] = useState<ContentSummary[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   // The reading mode is held here (not in <Reader/>) so the choice persists
@@ -47,6 +46,15 @@ export function App() {
               >
                 <span className="flex items-center gap-1.5 font-medium">
                   <span className="truncate">{t.titleSr}</span>
+                  {t.kind === 'quest' && (
+                    <span
+                      className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        active ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      Квест
+                    </span>
+                  )}
                   {t.audioUrl && (
                     <AudioBadge className={active ? 'text-indigo-500' : 'text-slate-400'} />
                   )}

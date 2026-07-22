@@ -1,0 +1,592 @@
+{
+  "id": "a99e8a92-af54-41e3-93fd-d18f18e594d6",
+  "prevId": "31e28c35-2ab0-4bee-93b8-0cfc6590ebc7",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.paragraphs": {
+      "name": "paragraphs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "text_id": {
+          "name": "text_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sr": {
+          "name": "sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ru": {
+          "name": "ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "paragraphs_text_id_texts_id_fk": {
+          "name": "paragraphs_text_id_texts_id_fk",
+          "tableFrom": "paragraphs",
+          "tableTo": "texts",
+          "columnsFrom": [
+            "text_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "paragraphs_text_position": {
+          "name": "paragraphs_text_position",
+          "nullsNotDistinct": false,
+          "columns": [
+            "text_id",
+            "position"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quest_choices": {
+      "name": "quest_choices",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scene_row_id": {
+          "name": "scene_row_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "choice_id": {
+          "name": "choice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_sr": {
+          "name": "text_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_ru": {
+          "name": "text_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quality": {
+          "name": "quality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feedback_sr": {
+          "name": "feedback_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feedback_ru": {
+          "name": "feedback_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "next_scene_id": {
+          "name": "next_scene_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quest_choices_scene_row_id_quest_scenes_id_fk": {
+          "name": "quest_choices_scene_row_id_quest_scenes_id_fk",
+          "tableFrom": "quest_choices",
+          "tableTo": "quest_scenes",
+          "columnsFrom": [
+            "scene_row_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quest_choices_scene_choice": {
+          "name": "quest_choices_scene_choice",
+          "nullsNotDistinct": false,
+          "columns": [
+            "scene_row_id",
+            "choice_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quest_endings": {
+      "name": "quest_endings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "text_id": {
+          "name": "text_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ending_id": {
+          "name": "ending_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title_sr": {
+          "name": "title_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title_ru": {
+          "name": "title_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_sr": {
+          "name": "text_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text_ru": {
+          "name": "text_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quest_endings_text_id_texts_id_fk": {
+          "name": "quest_endings_text_id_texts_id_fk",
+          "tableFrom": "quest_endings",
+          "tableTo": "texts",
+          "columnsFrom": [
+            "text_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quest_endings_text_ending": {
+          "name": "quest_endings_text_ending",
+          "nullsNotDistinct": false,
+          "columns": [
+            "text_id",
+            "ending_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quest_scenes": {
+      "name": "quest_scenes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "text_id": {
+          "name": "text_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scene_id": {
+          "name": "scene_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "speaker": {
+          "name": "speaker",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase_sr": {
+          "name": "phase_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase_ru": {
+          "name": "phase_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_sr": {
+          "name": "employee_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "employee_ru": {
+          "name": "employee_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_ru": {
+          "name": "prompt_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quest_scenes_text_id_texts_id_fk": {
+          "name": "quest_scenes_text_id_texts_id_fk",
+          "tableFrom": "quest_scenes",
+          "tableTo": "texts",
+          "columnsFrom": [
+            "text_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quest_scenes_text_scene": {
+          "name": "quest_scenes_text_scene",
+          "nullsNotDistinct": false,
+          "columns": [
+            "text_id",
+            "scene_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quest_vocabulary": {
+      "name": "quest_vocabulary",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "text_id": {
+          "name": "text_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sr": {
+          "name": "sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ru": {
+          "name": "ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "example_sr": {
+          "name": "example_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "example_ru": {
+          "name": "example_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quest_vocabulary_text_id_texts_id_fk": {
+          "name": "quest_vocabulary_text_id_texts_id_fk",
+          "tableFrom": "quest_vocabulary",
+          "tableTo": "texts",
+          "columnsFrom": [
+            "text_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "quest_vocabulary_text_position": {
+          "name": "quest_vocabulary_text_position",
+          "nullsNotDistinct": false,
+          "columns": [
+            "text_id",
+            "position"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quests": {
+      "name": "quests",
+      "schema": "",
+      "columns": {
+        "text_id": {
+          "name": "text_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "description_sr": {
+          "name": "description_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_ru": {
+          "name": "description_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "intro_sr": {
+          "name": "intro_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "intro_ru": {
+          "name": "intro_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_sr": {
+          "name": "objective_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_ru": {
+          "name": "objective_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_scene_id": {
+          "name": "start_scene_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "quests_text_id_texts_id_fk": {
+          "name": "quests_text_id_texts_id_fk",
+          "tableFrom": "quests",
+          "tableTo": "texts",
+          "columnsFrom": [
+            "text_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.texts": {
+      "name": "texts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'text'"
+        },
+        "title_sr": {
+          "name": "title_sr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title_ru": {
+          "name": "title_ru",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "audio_url": {
+          "name": "audio_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "texts_slug_unique": {
+          "name": "texts_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

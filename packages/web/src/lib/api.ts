@@ -1,4 +1,4 @@
-import type { TextDetail, TextListResponse } from '@jasamkrompir/shared';
+import type { ContentDetail, TextListResponse } from '@jasamkrompir/shared';
 
 // In the desktop shell the preload injects the embedded server's loopback URL
 // (window.jasamkrompir.apiBaseUrl) — it changes whenever the backend restarts
@@ -31,8 +31,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // The list of texts (titles only) shown in the reader's sidebar.
+  // The list of content items (titles + kind) shown in the reader's sidebar.
   getTexts: () => request<TextListResponse>('/api/texts'),
-  // One text with its aligned Serbian/Russian paragraphs.
-  getText: (id: number) => request<TextDetail>(`/api/texts/${id}`),
+  // One text or quest (discriminated by `kind`).
+  getText: (id: number) => request<ContentDetail>(`/api/texts/${id}`),
 };

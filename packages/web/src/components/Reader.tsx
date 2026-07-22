@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import type { TextDetail } from '@jasamkrompir/shared';
+import type { ContentDetail } from '@jasamkrompir/shared';
 import { api } from '../lib/api';
 import { useHoldReveal } from '../lib/hold-reveal';
 import { AudioPlayer } from './AudioPlayer';
+import { QuestPlayer } from './quest/QuestPlayer';
 import { ReadingModeSwitcher } from './ReadingModeSwitcher';
 import type { ReadingMode } from '../lib/reading-mode';
 
-// The reading pane: one text, shown in the chosen reading mode.
+// The reading pane: one content item (linear text or interactive quest), shown
+// in the chosen reading mode.
 //   both        — Serbian and Russian paragraphs aligned side by side.
 //   serbianOnly — Serbian only; no translation column, no reveal controls.
 //   reveal      — Serbian only; hold a paragraph to peek its translation.
-// `mode` lives in <App/> so it survives switching texts; hold-to-reveal state
-// is local to each paragraph and resets when the text or the mode changes.
+// `mode` lives in <App/> so it survives switching items; hold-to-reveal state
+// is local to each paragraph and resets when the item or mode changes.
 export function Reader({
   id,
   mode,
@@ -21,18 +23,18 @@ export function Reader({
   mode: ReadingMode;
   onModeChange: (mode: ReadingMode) => void;
 }) {
-  const [text, setText] = useState<TextDetail | null>(null);
+  const [content, setContent] = useState<ContentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    // Drop the previous text immediately so its content can't flash while the
+    // Drop the previous item immediately so its content can't flash while the
     // next one loads.
-    setText(null);
+    setContent(null);
     setError(null);
     api
       .getText(id)
-      .then((t) => alive && setText(t))
+      .then((t) => alive && setContent(t))
       .catch((e: unknown) => alive && setError(e instanceof Error ? e.message : String(e)));
     return () => {
       alive = false;
@@ -43,14 +45,21 @@ export function Reader({
     <article className="mx-auto max-w-3xl px-8 py-10">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6">
         <div className="min-w-0">
-          {text && (
+          {content && (
             <>
-              <h2 className="text-3xl font-bold tracking-tight">{text.titleSr}</h2>
-              <p className="mt-1 text-lg text-slate-500">{text.titleRu}</p>
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                {content.kind === 'quest' && (
+                  <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800">
+                    Квест
+                  </span>
+                )}
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight">{content.titleSr}</h2>
+              <p className="mt-1 text-lg text-slate-500">{content.titleRu}</p>
             </>
           )}
         </div>
-        {/* The switcher stays put while a text loads so the mode never flickers. */}
+        {/* The switcher stays put while content loads so the mode never flickers. */}
         <div className="pt-2">
           <ReadingModeSwitcher mode={mode} onChange={onModeChange} />
         </div>
@@ -58,19 +67,21 @@ export function Reader({
 
       {/* Narration player, shown only for texts that ship with a recording.
           Keyed by src so a different text always starts from a fresh element. */}
-      {text?.audioUrl && (
+      {content?.kind === 'text' && content.audioUrl && (
         <div className="mb-8">
-          <AudioPlayer key={text.audioUrl} src={text.audioUrl} />
+          <AudioPlayer key={content.audioUrl} src={content.audioUrl} />
         </div>
       )}
 
       {error ? (
         <p className="text-sm text-slate-500">{error}</p>
-      ) : !text ? (
+      ) : !content ? (
         <p className="text-sm text-slate-400">Загрузка…</p>
+      ) : content.kind === 'quest' ? (
+        <QuestPlayer quest={content} mode={mode} />
       ) : (
         <div className="space-y-6">
-          {text.paragraphs.map((p, i) => (
+          {content.paragraphs.map((p, i) => (
             <ParagraphView key={i} paragraph={p} mode={mode} textId={id} index={i} />
           ))}
         </div>
@@ -85,7 +96,7 @@ function ParagraphView({
   textId,
   index,
 }: {
-  paragraph: TextDetail['paragraphs'][number];
+  paragraph: { sr: string; ru: string };
   mode: ReadingMode;
   textId: number;
   index: number;

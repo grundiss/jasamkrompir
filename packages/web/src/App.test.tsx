@@ -25,8 +25,30 @@ describe('App', () => {
 
     expect(await screen.findByRole('button', { name: /Naslov A/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Naslov B/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Quest A Sr/ })).toBeInTheDocument();
+    // Quest entries are labelled in the sidebar.
+    expect(screen.getByText('Квест')).toBeInTheDocument();
     // First text opens by default, in the reading pane.
     expect(await screen.findByText('Srpski A1')).toBeInTheDocument();
+  });
+
+  it('opens a quest in the reading pane and resets when switching away and back', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText('Srpski A1');
+    await user.click(screen.getByRole('button', { name: /Quest A Sr/ }));
+    expect(await screen.findByText('Zdravo od operatera')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Ljubazan odgovor/ }));
+    expect(screen.getByText('Odlično!')).toBeInTheDocument();
+
+    // Switch to another item, then back — quest progress must reset.
+    await user.click(screen.getByRole('button', { name: /Naslov A/ }));
+    await screen.findByText('Srpski A1');
+    await user.click(screen.getByRole('button', { name: /Quest A Sr/ }));
+    expect(await screen.findByText('Zdravo od operatera')).toBeInTheDocument();
+    expect(screen.queryByText('Odlično!')).not.toBeInTheDocument();
   });
 
   it('keeps the chosen reading mode when switching to another text', async () => {
