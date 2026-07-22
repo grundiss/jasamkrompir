@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { TextDetail } from '@jasamkrompir/shared';
 import { api } from '../lib/api';
+import { useHoldReveal } from '../lib/hold-reveal';
 import { AudioPlayer } from './AudioPlayer';
 import { ReadingModeSwitcher } from './ReadingModeSwitcher';
 import type { ReadingMode } from '../lib/reading-mode';
@@ -8,9 +9,9 @@ import type { ReadingMode } from '../lib/reading-mode';
 // The reading pane: one text, shown in the chosen reading mode.
 //   both        — Serbian and Russian paragraphs aligned side by side.
 //   serbianOnly — Serbian only; no translation column, no reveal controls.
-//   reveal      — Serbian only, each paragraph's translation revealed on demand.
-// `mode` lives in <App/> so it survives switching texts; the per-paragraph
-// reveals here are local and reset whenever the text or the mode changes.
+//   reveal      — Serbian only; hold a paragraph to peek its translation.
+// `mode` lives in <App/> so it survives switching texts; hold-to-reveal state
+// is local to each paragraph and resets when the text or the mode changes.
 export function Reader({
   id,
   mode,
@@ -22,7 +23,6 @@ export function Reader({
 }) {
   const [text, setText] = useState<TextDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set<number>());
 
   useEffect(() => {
     let alive = true;
@@ -38,20 +38,6 @@ export function Reader({
       alive = false;
     };
   }, [id]);
-
-  // Individually-revealed translations never carry across texts or modes: a new
-  // text starts fresh, and each mode defines its own initial visibility.
-  useEffect(() => {
-    setExpanded(new Set<number>());
-  }, [id, mode]);
-
-  const toggleParagraph = (i: number) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
 
   return (
     <article className="mx-auto max-w-3xl px-8 py-10">
@@ -85,15 +71,7 @@ export function Reader({
       ) : (
         <div className="space-y-6">
           {text.paragraphs.map((p, i) => (
-            <ParagraphView
-              key={i}
-              paragraph={p}
-              mode={mode}
-              textId={id}
-              index={i}
-              open={expanded.has(i)}
-              onToggle={() => toggleParagraph(i)}
-            />
+            <ParagraphView key={i} paragraph={p} mode={mode} textId={id} index={i} />
           ))}
         </div>
       )}
@@ -106,16 +84,16 @@ function ParagraphView({
   mode,
   textId,
   index,
-  open,
-  onToggle,
 }: {
   paragraph: TextDetail['paragraphs'][number];
   mode: ReadingMode;
   textId: number;
   index: number;
-  open: boolean;
-  onToggle: () => void;
 }) {
+  // Reset hold state when the text or mode changes (same index can be reused
+  // across texts, so we can't rely on remount alone).
+  const hold = useHoldReveal(`${textId}:${mode}`);
+
   // One shared Serbian-text box so serbianOnly and reveal are pixel-identical:
   // switching between those modes never nudges a single line. In reveal the same
   // box becomes an interactive button.
@@ -144,21 +122,19 @@ function ParagraphView({
     );
   }
 
-  // reveal: tapping a paragraph floats its translation just above it, like a
+  // reveal: holding a paragraph floats its translation just above it, like a
   // tooltip, so the reading flow of the Serbian text below is never pushed
-  // around. Several can be pinned open at once; Esc closes the focused one.
+  // around. Release (or blur / Esc) hides it again.
   const translationId = `text-${textId}-p-${index}-translation`;
+  const { open, ...holdProps } = hold;
   return (
     <div className="relative -mx-2">
       <button
         type="button"
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape' && open) onToggle();
-        }}
+        {...holdProps}
         aria-expanded={open}
         aria-controls={open ? translationId : undefined}
-        className={`${serbianBox} cursor-pointer outline-none transition-colors hover:bg-indigo-50/70 focus-visible:ring-2 focus-visible:ring-indigo-300 ${
+        className={`${serbianBox} cursor-pointer select-none outline-none transition-colors hover:bg-indigo-50/70 focus-visible:ring-2 focus-visible:ring-indigo-300 ${
           open ? 'bg-indigo-50/70' : ''
         }`}
       >

@@ -2,11 +2,11 @@
 //
 //   both        — Serbian and Russian paragraphs shown together, aligned.
 //   serbianOnly — Serbian only; no translation column, no reveal controls.
-//   reveal      — Serbian only, but each paragraph's translation can be
-//                 revealed (and hidden again) on demand, independently.
+//   reveal      — Serbian only; hold (pointer/Space/Enter) to peek a
+//                 translation, release to hide it again.
 //
 // The chosen mode is app-run state (kept in <App/>) so it carries across texts;
-// per-paragraph reveals are local to the reading pane and never carry across.
+// hold-to-reveal state is local to each line and never carries across.
 export type ReadingMode = 'both' | 'serbianOnly' | 'reveal';
 
 export interface ReadingModeOption {

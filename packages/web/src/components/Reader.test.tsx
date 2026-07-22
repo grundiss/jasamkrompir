@@ -52,44 +52,55 @@ describe('Reader — serbianOnly mode', () => {
 });
 
 describe('Reader — reveal mode', () => {
-  it('starts hidden and floats each paragraph translation independently on tap', async () => {
+  it('shows a translation only while the pointer is held, then hides on release', async () => {
     const user = userEvent.setup();
     render(<Harness id={1} initialMode="reveal" />);
 
-    // Each Serbian paragraph is the tap target.
     const p1 = await screen.findByRole('button', { name: 'Srpski A1' });
     const p2 = screen.getByRole('button', { name: 'Srpski A2' });
     expect(p1).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
     expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
 
-    // Reveal the first paragraph only.
-    await user.click(p1);
+    // Press and hold the first paragraph.
+    await user.pointer({ keys: '[MouseLeft>]', target: p1 });
     expect(screen.getByText('Перевод A1')).toBeInTheDocument();
     expect(p1).toHaveAttribute('aria-expanded', 'true');
     expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
 
-    // Reveal the second too — both can stay pinned open at once.
-    await user.click(p2);
-    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
-    expect(screen.getByText('Перевод A2')).toBeInTheDocument();
-
-    // Tapping the first again hides only its translation.
-    await user.click(p1);
+    // Release — translation disappears.
+    await user.pointer({ keys: '[/MouseLeft]' });
     expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    expect(p1).toHaveAttribute('aria-expanded', 'false');
+
+    // Holding the second works the same way, independently.
+    await user.pointer({ keys: '[MouseLeft>]', target: p2 });
     expect(screen.getByText('Перевод A2')).toBeInTheDocument();
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+    await user.pointer({ keys: '[/MouseLeft]' });
+    expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
   });
 
-  it('toggles a translation from the keyboard', async () => {
+  it('shows a translation while Enter/Space is held, hides on release or Esc', async () => {
     const user = userEvent.setup();
     render(<Harness id={1} initialMode="reveal" />);
 
     const p1 = await screen.findByRole('button', { name: 'Srpski A1' });
     p1.focus();
-    await user.keyboard('{Enter}');
-    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
 
-    // Esc closes the focused paragraph's translation.
+    await user.keyboard('{Enter>}');
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    await user.keyboard('{/Enter}');
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+
+    await user.keyboard('[Space>]');
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    await user.keyboard('[/Space]');
+    expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
+
+    // Esc also dismisses while held.
+    await user.keyboard('{Enter>}');
+    expect(screen.getByText('Перевод A1')).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
   });
@@ -98,7 +109,8 @@ describe('Reader — reveal mode', () => {
     const user = userEvent.setup();
     const { rerender } = render(<Harness id={1} initialMode="reveal" />);
 
-    await user.click(await screen.findByRole('button', { name: 'Srpski A1' }));
+    const p1 = await screen.findByRole('button', { name: 'Srpski A1' });
+    await user.pointer({ keys: '[MouseLeft>]', target: p1 });
     expect(screen.getByText('Перевод A1')).toBeInTheDocument();
 
     // Switch to another text — the new one loads collapsed.
@@ -115,15 +127,17 @@ describe('Reader — switching modes', () => {
     const user = userEvent.setup();
     render(<Harness id={1} initialMode="reveal" />);
 
-    await user.click(await screen.findByRole('button', { name: 'Srpski A1' }));
+    const p1 = await screen.findByRole('button', { name: 'Srpski A1' });
+    await user.pointer({ keys: '[MouseLeft>]', target: p1 });
     expect(screen.getByText('Перевод A1')).toBeInTheDocument();
+    await user.pointer({ keys: '[/MouseLeft]' });
 
     // → both: every translation is shown.
     await user.click(screen.getByRole('button', { name: 'Сербский + перевод' }));
     expect(screen.getByText('Перевод A1')).toBeInTheDocument();
     expect(screen.getByText('Перевод A2')).toBeInTheDocument();
 
-    // → reveal again: back to all-hidden, not carrying the earlier reveal.
+    // → reveal again: back to all-hidden.
     await user.click(screen.getByRole('button', { name: 'Перевод по нажатию' }));
     expect(screen.queryByText('Перевод A1')).not.toBeInTheDocument();
     expect(screen.queryByText('Перевод A2')).not.toBeInTheDocument();
